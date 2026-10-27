@@ -1,0 +1,10 @@
+export type Risk = "low" | "medium" | "high" | "critical";
+export type Filters = { business_keyword: string; province: string; city: string; min_capital: number; min_employees: number; manufacturer_only?: boolean; max_risk: Risk | "" };
+export type Supplier = { id:string; name:string; business_scope:string; registered_capital:number; paid_capital:number; employee_count:number; establish_date:string; province:string; city:string; is_manufacturer:boolean; risk_level:Risk; risk_tags:string[]; certifications:string[]; main_products:string[]; capacity_description:string; credit_code:string };
+export type ScoredSupplier = Supplier & { match_score:number; reasons:string[] };
+export type SearchResult = { items:ScoredSupplier[]; total:number; page:number; page_size:number; applied_filters:Filters; interpretation:string };
+export type Checklist = { supplier_id:string; supplier_name:string; summary:string; sections:{category:string; items:{title:string; description:string; priority:string}[]}[] };
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+export async function searchSuppliers(query:string, filters:Filters):Promise<SearchResult> { const response=await fetch(`${API}/api/v1/suppliers/search`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({query,filters,page:1,page_size:20})}); if(!response.ok) throw new Error("搜索服务暂时不可用"); return (await response.json()).data; }
+export async function getSupplier(id:string):Promise<Supplier> { const response=await fetch(`${API}/api/v1/suppliers/${id}`); if(!response.ok) throw new Error("供应商不存在"); return (await response.json()).data; }
+export async function getChecklist(id:string):Promise<Checklist> { const response=await fetch(`${API}/api/v1/suppliers/${id}/audit-checklist`, {method:"POST"}); if(!response.ok) throw new Error("审核清单生成失败"); return (await response.json()).data; }

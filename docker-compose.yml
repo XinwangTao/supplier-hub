@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: supplier_hub
+      POSTGRES_USER: supplier
+      POSTGRES_PASSWORD: supplier
+    ports:
+      - "5432:5432"
+    volumes:
+      - supplier-postgres:/var/lib/postgresql/data
+  backend:
+    build: ./backend
+    environment:
+      HTTP_ADDR: ":8080"
+      CORS_ORIGINS: "http://localhost:3000"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+  frontend:
+    build: ./frontend
+    environment:
+      NEXT_PUBLIC_API_URL: "http://localhost:8080"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+volumes:
+  supplier-postgres:
