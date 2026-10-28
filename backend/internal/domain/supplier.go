@@ -118,6 +118,8 @@ type ScoredSupplier struct {
 	Supplier
 	MatchScore int      `json:"match_score"`
 	Reasons    []string `json:"reasons"`
+	// Overall 美团式四维综合分(含四分项与置信标记);实时计算,搜索响应附带。
+	Overall *OverallScore `json:"overall,omitempty"`
 }
 
 type SearchResult struct {

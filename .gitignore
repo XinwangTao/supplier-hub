@@ -39,3 +39,11 @@ backend/data/*.csv
 backend/data/*.txt
 !backend/data/*.template.csv
 !backend/data/*.example.txt
+
+# 企查查原始查询缓存(本地留存,不进库)
+backend/data/cache/
+backend/data/fourm1e.json
+backend/data/fourm1e.json.tmp
+
+# 本机端口避让覆盖(5432/8080 被其他项目占用),仅本机生效
+/docker-compose.override.yml

@@ -9,6 +9,7 @@ import (
 
 	"github.com/example/supplier-hub/backend/internal/config"
 	"github.com/example/supplier-hub/backend/internal/domain"
+	"github.com/example/supplier-hub/backend/internal/fourm1e"
 	"github.com/example/supplier-hub/backend/internal/handler"
 	"github.com/example/supplier-hub/backend/internal/policy"
 	"github.com/example/supplier-hub/backend/internal/repository"
@@ -38,7 +39,10 @@ func main() {
 	graphs := service.NewGraphService(repo)
 	srmStore := srm.NewStore()
 	ops := service.NewSupplierOpsService(repo, srmStore)
-	h := handler.New(suppliers, audits, graphs, ops, meta)
+	// 巡厂五维档案落在挂载卷里(data/ 已映射到宿主机 backend/data/),重启不丢
+	m1eStore := fourm1e.NewStore("data/fourm1e.json")
+	scoringSvc := service.NewScoringService(repo, ops, m1eStore)
+	h := handler.New(suppliers, audits, graphs, ops, scoringSvc, m1eStore, meta)
 
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery(), cors(cfg.CORSOrigins))
@@ -55,6 +59,8 @@ func main() {
 	api.GET("/meta/policy", h.Policy)
 	api.GET("/meta/dataset", h.Dataset)
 	api.POST("/suppliers/search", h.Search)
+	// 美团式综合分榜单:总榜(capability 省略)/ 32 类品类榜,与搜索同一评分管线
+	api.GET("/scoring/ranking", h.ScoringRanking)
 	api.GET("/suppliers/:id", h.Get)
 	api.POST("/suppliers/:id/audit-checklist", h.Checklist)
 	api.POST("/graph/build", h.BuildGraph)
@@ -72,6 +78,10 @@ func main() {
 
 	// 轻量 SRM：企业侧工作台与数据录入
 	api.GET("/srm/workspace", h.SRMWorkspace)
+	// 供应商五维档案(人机料法环):巡厂人工录入的事实数据,快照留痕可回查
+	api.GET("/srm/4m1e/:supplierId", h.FourM1EGet)
+	api.POST("/srm/4m1e/:supplierId", h.FourM1ESave)
+	api.GET("/srm/4m1e/:supplierId/history", h.FourM1EHistory)
 	api.GET("/srm/tenants", h.SRMTenants)
 	api.POST("/srm/tenants", h.SRMEnsureTenant)
 	api.POST("/srm/engagements", h.SRMCreateEngagement)

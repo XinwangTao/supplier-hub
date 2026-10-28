@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/example/supplier-hub/backend/internal/domain"
+	"github.com/example/supplier-hub/backend/internal/fourm1e"
 	"github.com/example/supplier-hub/backend/internal/policy"
 	"github.com/example/supplier-hub/backend/internal/repository"
 	"github.com/example/supplier-hub/backend/internal/service"
@@ -16,12 +17,14 @@ type Handler struct {
 	audits    *service.AuditService
 	graphs    *service.GraphService
 	ops       *service.SupplierOpsService
+	scoring   *service.ScoringService
+	fourm1e   *fourm1e.Store
 	dataset   repository.DatasetMeta
 }
 
 func New(suppliers *service.SupplierService, audits *service.AuditService, graphs *service.GraphService,
-	ops *service.SupplierOpsService, dataset repository.DatasetMeta) *Handler {
-	return &Handler{suppliers: suppliers, audits: audits, graphs: graphs, ops: ops, dataset: dataset}
+	ops *service.SupplierOpsService, scoring *service.ScoringService, m1e *fourm1e.Store, dataset repository.DatasetMeta) *Handler {
+	return &Handler{suppliers: suppliers, audits: audits, graphs: graphs, ops: ops, scoring: scoring, fourm1e: m1e, dataset: dataset}
 }
 
 // Dataset 返回当前供应商数据集的来源与真实性标记。
@@ -58,6 +61,12 @@ func (h *Handler) Search(c *gin.Context) {
 	if err != nil {
 		serverError(c, err)
 		return
+	}
+	// 每条候选附带美团式综合分(节点④⑤):评级表只算一次,候选内复用。
+	ratings := h.scoring.PlatformRatingsMap(c.Request.Context())
+	for i := range result.Items {
+		overall := h.scoring.ScoreSupplierWith(ratings, result.Items[i].Supplier, float64(result.Items[i].MatchScore))
+		result.Items[i].Overall = &overall
 	}
 	c.JSON(http.StatusOK, gin.H{"data": result})
 }
