@@ -5,6 +5,7 @@ import Link from "next/link";
 import { SupplierDossier } from "../../components/DetailPanel";
 import { EngageControl, RatingChip } from "../../components/SourcingActions";
 import TenantPicker from "../../components/TenantPicker";
+import SiteNav from "../../components/SiteNav";
 import {
   fetchBriefs,
   fetchSupplier,
@@ -21,7 +22,8 @@ const initialFilters: Filters = { business_keyword: "", province: "", city: "", 
 const riskLabel: Record<string, string> = { low: "低风险", medium: "中风险", high: "高风险", critical: "重点风险" };
 
 export default function SearchPage() {
-  const [query, setQuery] = useState("找东莞注册资本 500 万以上、员工 100 人以上的精密注塑生产厂家");
+  // 默认空需求:首访展示全库供应商(按综合分),而不是带着演示筛选搜出 0 条
+  const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<Filters>(initialFilters);
   const [items, setItems] = useState<ScoredSupplier[]>([]);
   const [interpretation, setInterpretation] = useState("");
@@ -92,16 +94,9 @@ export default function SearchPage() {
             <small>SUPPLY MESH</small>
           </div>
         </div>
-        <nav className="navTabs">
-          <Link href="/">产品发散网</Link>
-          <Link href="/">供应链全域网</Link>
-          <span className="active">寻源搜索</span>
-          <Link href="/srm">供应商管理</Link>
-          <Link href="/ranking">平台评级</Link>
-        </nav>
+        <SiteNav active="/search" />
         <div className="topMeta">
           <span className="liveDot" />
-          {total} 家匹配企业
           <TenantPicker compact />
         </div>
       </header>
@@ -117,11 +112,19 @@ export default function SearchPage() {
           className="netSearch wide"
           onSubmit={(event) => {
             event.preventDefault();
-            void runSearch();
+            // 提交新需求时清掉上一次解析出的筛选残留(它们已隐性生效,会让新需求搜出 0 条);
+            // 高级面板的「应用筛选」不受影响,仍按面板里的显式筛选执行。
+            setFilters(initialFilters);
+            void runSearch(query, initialFilters);
           }}
         >
           <span className="netSearchIcon">⌕</span>
-          <input value={query} onChange={(event) => setQuery(event.target.value)} aria-label="自然语言寻源" />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            aria-label="自然语言寻源"
+            placeholder="例如:找苏州做 CNC 精密加工、注册资本 5000 万以上的供应商"
+          />
           <button className="primaryButton" type="submit" disabled={loading}>
             {loading ? "分析中…" : "开始寻源 →"}
           </button>
@@ -228,6 +231,20 @@ export default function SearchPage() {
                 <strong>{item.match_score}</strong>
                 <span>匹配度</span>
               </div>
+              {/* 美团式综合分:四维加权;title 展开可看分项与缺失标记 */}
+              {item.overall && (
+                <div
+                  className="score"
+                  title={item.overall.dimensions.map((d) => `${d.label} ${d.score}${d.flag ? `(${d.flag === "no_data" ? "无数据" : "证据不足"})` : ""}`).join(" · ")}
+                >
+                  <strong style={{ color: item.overall.confidence === "low" ? "#8a9a92" : "#0e6253" }}>
+                    {item.overall.total.toFixed(1)}
+                  </strong>
+                  <span>
+                    综合分{item.overall.confidence === "low" ? " · 证据不足" : item.overall.confidence === "medium" ? " · 中置信" : ""}
+                  </span>
+                </div>
+              )}
               <div className="chevron">›</div>
             </article>
           ))}

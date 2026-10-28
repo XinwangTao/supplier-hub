@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import type { Checklist, Graph, GraphNode, Supplier, SupplierBrief } from "../lib/api";
 import { fetchChecklist, money } from "../lib/api";
 import { EngageControl, RatingChip } from "./SourcingActions";
+import FourM1EForm from "./FourM1EForm";
+import FourM1EPanel from "./FourM1EPanel";
 
 type Props = {
   graph: Graph;
@@ -339,6 +341,10 @@ export function SupplierDossier({
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [flash, setFlash] = useState("");
+  // 五维档案(人机料法环)录入表单开关:录入/修正共用一个入口,修正=重录新快照
+  const [showM1EForm, setShowM1EForm] = useState(false);
+  // 保存成功后让展示面板重挂载重拉(key 变化),档案立即可见,不用整页刷新
+  const [m1eRefresh, setM1eRefresh] = useState(0);
 
   useEffect(() => {
     setChecklist(null);
@@ -424,6 +430,30 @@ export function SupplierDossier({
         )}
         {!supplier.data_source && <span className="stale">该记录未标注来源，请勿直接采信</span>}
       </div>
+
+      {/* 4M1E 档案:巡厂人工录入的现场事实(人机料法环),不是评分,与 QCDST 五维互不替代 */}
+      <div className="panelSectionTitle" style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+        <span>4M1E 档案（人·机·料·法·环）</span>
+        <button
+          onClick={() => setShowM1EForm(!showM1EForm)}
+          style={{ fontSize: 12, color: "#0e6253", background: "none", border: "1px solid #7fa79a", borderRadius: 6, padding: "1px 10px", cursor: "pointer" }}
+        >
+          {showM1EForm ? "收起录入表单" : "录入 / 修正"}
+        </button>
+      </div>
+      <FourM1EPanel key={m1eRefresh} supplierId={supplier.id} />
+      {showM1EForm && (
+        <FourM1EForm
+          supplierId={supplier.id}
+          supplierName={supplier.name}
+          onClose={() => setShowM1EForm(false)}
+          onSaved={(message) => {
+            setFlash(message);
+            setM1eRefresh((n) => n + 1);
+            setTimeout(() => setFlash(""), 2600);
+          }}
+        />
+      )}
 
       <div className="dossierHero">
         <div>

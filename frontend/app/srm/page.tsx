@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import NavBar from "@/components/NavBar";
 import { GradeBadge } from "@/components/Qcdst";
+import FourM1EForm from "@/components/FourM1EForm";
 import {
   fetchTenants,
   fetchWorkspace,
@@ -23,6 +24,9 @@ export default function SrmPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // 4M1E 巡厂档案录入:当前正在为哪家供应商填表(与人机料法环档案对应,勿与 QCDST 五维评分混淆)
+  const [m1eTarget, setM1eTarget] = useState<{ id: string; name: string } | null>(null);
+  const [m1eFlash, setM1eFlash] = useState("");
 
   const load = useCallback(async (tenantId: string) => {
     setLoading(true);
@@ -168,7 +172,7 @@ export default function SrmPage() {
           </section>
         )}
 
-        {workspace && workspace.insights.length > 0 && (
+        {workspace && (workspace.insights ?? []).length > 0 && (
           <section className="insightRow">
             {workspace.insights.map((insight, i) => (
               <div key={`${insight.kind}-${i}`} className={`insightCard lv-${insight.level}`}>
@@ -277,11 +281,35 @@ export default function SrmPage() {
                       <Link href={`/vendor/${encodeURIComponent(row.supplier_id)}?tenant=${row.tenant_id}`} className="linkBtn">
                         明细 →
                       </Link>
+                      <button
+                        className="linkBtn"
+                        onClick={() => setM1eTarget({ id: row.supplier_id, name: row.supplier_name })}
+                        style={{ marginLeft: 8 }}
+                      >
+                        4M1E 录入
+                      </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          )}
+
+          {/* 4M1E 巡厂档案录入(人工事实,非评分);修正=重录新快照 */}
+          {m1eFlash && (
+            <div style={{ margin: "10px 0", padding: "6px 12px", background: "#eef6f2", border: "1px solid #7fa79a", borderRadius: 6, color: "#0e6253", fontSize: 13 }}>
+              {m1eFlash}
+            </div>
+          )}
+          {m1eTarget && (
+            <div style={{ marginTop: 16 }}>
+              <FourM1EForm
+                supplierId={m1eTarget.id}
+                supplierName={m1eTarget.name}
+                onClose={() => setM1eTarget(null)}
+                onSaved={(message) => setM1eFlash(message)}
+              />
+            </div>
           )}
         </section>
       </main>

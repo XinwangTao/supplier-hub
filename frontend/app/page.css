@@ -498,3 +498,28 @@ button { font-family: inherit; }
 .sourceStrip b { color: var(--ink-2); font-weight: 600; }
 .sourceStrip a { color: var(--green); text-decoration: none; border-bottom: 1px solid #bcd8cb; }
 .sourceStrip .stale { color: #a14526; }
+
+/* ---------- 页内视图切换(发散网/全域网),与全站导航分离 ---------- */
+.modeSwitch {
+  display: flex;
+  background: var(--white);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+.modeSwitch button {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: all 0.16s ease;
+}
+.modeSwitch button.on {
+  background: var(--green);
+  color: #fff;
+}

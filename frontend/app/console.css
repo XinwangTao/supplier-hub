@@ -37,42 +37,47 @@
   border-radius: 8px;
   background: var(--green);
   color: #fff;
-  font: 600 11px "DM Mono", monospace;
+  /* 与主网络页 .brandMark 同款:衬线单字母圆标,跨页面品牌一致 */
+  font-family: Georgia, serif;
+  font-size: 18px;
   display: grid;
   place-items: center;
-  letter-spacing: 0.02em;
 }
 
 .navBrand b {
   display: block;
-  font-size: 14px;
+  font-size: 13px;
   letter-spacing: -0.01em;
 }
 
 .navBrand em {
   display: block;
   font-style: normal;
-  font-size: 10.5px;
+  font: 400 9px "DM Mono", monospace;
+  letter-spacing: 0.16em;
   color: var(--muted);
-  margin-top: 1px;
+  margin-top: 2px;
 }
 
 .navLinks {
   display: flex;
+  align-items: center;
   gap: 4px;
   height: 100%;
 }
 
+/* 与主网络页 .navTabs 同款胶囊导航:单行、悬浮浅底、当前页绿底白字 */
 .navLink {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 2px;
-  padding: 0 14px;
+  align-items: center;
+  padding: 7px 13px;
+  border-radius: 7px;
+  border-bottom: 0;
   text-decoration: none;
-  color: var(--ink-2);
-  border-bottom: 2px solid transparent;
-  transition: background 0.15s, border-color 0.15s;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: all 0.16s ease;
 }
 
 .navLink span {
@@ -81,21 +86,26 @@
 }
 
 .navLink small {
-  font-size: 10px;
-  color: var(--muted);
+  display: none;
 }
 
 .navLink:hover {
-  background: #f2f7f4;
+  background: #eef3f0;
+  color: var(--ink);
 }
 
 .navLink.on {
-  border-bottom-color: var(--green);
-  color: var(--green);
+  background: var(--green);
+  color: #fff;
+}
+
+.navLink.on:hover {
+  background: var(--green-deep);
+  color: #fff;
 }
 
 .navLink.on small {
-  color: #5b8477;
+  color: #fff;
 }
 
 /* ---------- 页容器 ---------- */
@@ -117,8 +127,10 @@
 
 .pageHead h1 {
   margin: 0 0 6px;
-  font-size: 20px;
-  letter-spacing: -0.015em;
+  /* 与主网络页 .canvasTitle h1 同规格,标题层级跨页面一致 */
+  font-size: 22px;
+  letter-spacing: -0.03em;
+  font-weight: 700;
 }
 
 .pageHead p {

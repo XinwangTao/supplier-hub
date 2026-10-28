@@ -4,7 +4,10 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import NavBar from "@/components/NavBar";
 import { GradeBadge } from "@/components/Qcdst";
-import { fetchLoop, fetchRanking, type LoopReport, type PlatformRating } from "@/lib/api";
+import {
+  fetchLoop, fetchRanking, fetchScoringRanking, fetchCapabilities, flagLabel,
+  type LoopReport, type PlatformRating, type ScoringRankingItem, type CapabilityMeta,
+} from "@/lib/api";
 import { readTenant, subscribeTenant } from "@/lib/tenant";
 
 export default function RankingPage() {
@@ -14,6 +17,25 @@ export default function RankingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [sort, setSort] = useState<"total" | "buyers" | "batches">("total");
+  // 视图切换:综合榜(美团式四维) / 履约评级(QCDST)。两榜口径不同,并列共存。
+  const [view, setView] = useState<"overall" | "qcdst">("overall");
+  const [overallItems, setOverallItems] = useState<ScoringRankingItem[]>([]);
+  const [capList, setCapList] = useState<CapabilityMeta[]>([]);
+  const [capFilter, setCapFilter] = useState("");
+  const [overallLoading, setOverallLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCapabilities().then(setCapList).catch(() => setCapList([]));
+  }, []);
+
+  useEffect(() => {
+    if (view !== "overall") return;
+    setOverallLoading(true);
+    fetchScoringRanking(capFilter || undefined)
+      .then((res) => setOverallItems(res.items || []))
+      .catch(() => setOverallItems([]))
+      .finally(() => setOverallLoading(false));
+  }, [view, capFilter]);
 
   const loadLoop = useCallback((tenantId: string) => {
     fetchLoop(tenantId)
@@ -52,14 +74,127 @@ export default function RankingPage() {
       <main className="consoleBody">
         <div className="pageHead">
           <div>
-            <h1>平台综合评级</h1>
+            <h1>供应商排行榜</h1>
             <p>
-              把每家采购方对同一家供应商的 QCDST 按样本量加权合并，形成跨企业的公共评级。
-              新用户选供应商时先看这张榜，再点进去看逐项证据。
+              综合榜按四维加权(履约/匹配/工商/现场)排出"综合看起来最稳"的供应商;履约评级榜只看
+              QCDST 单据证据。两榜口径不同,配合使用。
             </p>
           </div>
         </div>
 
+        {/* 视图切换:综合榜(美团式) / 履约评级(QCDST) */}
+        <div className="sortTabs" style={{ marginBottom: 14 }}>
+          {(
+            [
+              ["overall", "综合榜"],
+              ["qcdst", "履约评级(QCDST)"],
+            ] as const
+          ).map(([key, label]) => (
+            <button key={key} className={`sortTab ${view === key ? "on" : ""}`} onClick={() => setView(key)}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {view === "overall" && (
+          <>
+            <section className="explainRow">
+              <div className="explainCard">
+                <b>综合分怎么算</b>
+                <p>
+                  QCDST 履约 40% + 需求匹配 30%(榜单场景为能力覆盖度)+ 工商实力 15% + 4M1E 巡厂档案 15%。
+                  点开每行可看四分项与口径。
+                </p>
+              </div>
+              <div className="explainCard">
+                <b>「无数据 / 证据不足」</b>
+                <p>
+                  缺失维度按 0 分计入并显式标记,不隐藏也不填充——分数旁边的置信标识告诉你要不要信它。
+                </p>
+              </div>
+              <div className="explainCard">
+                <b>按品类看</b>
+                <p>选择工艺能力后,榜单只保留具备该能力的供应商,评分管线不变。</p>
+              </div>
+            </section>
+
+            <section className="card">
+              <div className="cardHead">
+                <h2>
+                  综合榜 <em className="countTag">{overallItems.length} 家</em>
+                </h2>
+                <select value={capFilter} onChange={(e) => setCapFilter(e.target.value)} style={{ padding: "4px 10px", border: "1px solid #c9d8d1", borderRadius: 6 }}>
+                  <option value="">全部品类(总榜)</option>
+                  {capList.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {overallLoading && <div className="emptyBlock">正在评分…</div>}
+
+              {!overallLoading && overallItems.length === 0 && (
+                <div className="emptyBlock">
+                  <h3>该品类暂无在库供应商</h3>
+                  <p>换一个品类,或到寻源搜索看看全部 52 家。</p>
+                </div>
+              )}
+
+              {!overallLoading && overallItems.length > 0 && (
+                <table className="grid">
+                  <thead>
+                    <tr>
+                      <th style={{ width: 40 }}>#</th>
+                      <th style={{ width: 220 }}>供应商</th>
+                      <th style={{ width: 90 }}>综合分</th>
+                      <th style={{ width: 96 }}>置信</th>
+                      <th>四分项</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {overallItems.map((row, i) => (
+                      <tr key={row.supplier_id}>
+                        <td className="mono muted">{i + 1}</td>
+                        <td>
+                          <Link href={`/vendor/${encodeURIComponent(row.supplier_id)}`} className="vendorCell">
+                            <b>{row.short_name || row.supplier_name}</b>
+                            <small>
+                              {row.city} · {row.capabilities?.slice(0, 2).join(" / ")}
+                            </small>
+                          </Link>
+                        </td>
+                        <td>
+                          <span className="bigScore">{row.total.toFixed(1)}</span>
+                        </td>
+                        <td>
+                          <span className={`spreadTag ${row.confidence === "low" ? "wide" : ""}`}>
+                            {row.confidence === "high" ? "高置信" : row.confidence === "medium" ? "中置信" : "低置信"}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="dimDots">
+                            {row.dimensions.map((d) => (
+                              <span key={d.key} className="dimDot" title={`${d.label} ${d.note}`}>
+                                <em>{d.label.slice(0, 1)}</em>
+                                <b className={d.flag ? "missing" : ""}>{d.score > 0 ? d.score.toFixed(0) : "—"}</b>
+                                {d.flag && <i style={{ fontSize: 10, color: "#c9603c", marginLeft: 2 }}>{flagLabel(d.flag)}</i>}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </section>
+          </>
+        )}
+
+        {view === "qcdst" && (
+          <>
         <section className="explainRow">
           <div className="explainCard">
             <b>怎么算的</b>
@@ -208,6 +343,8 @@ export default function RankingPage() {
             </table>
           )}
         </section>
+          </>
+        )}
 
         {meta && typeof meta.note === "string" && <p className="footNote">{meta.note}</p>}
       </main>

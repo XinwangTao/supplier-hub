@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import SiteNav from "@/components/SiteNav";
 import Link from "next/link";
 import NetworkGraph from "../components/NetworkGraph";
 import DetailPanel from "../components/DetailPanel";
@@ -160,17 +161,7 @@ export default function Home() {
             <small>SUPPLY MESH</small>
           </div>
         </div>
-        <nav className="navTabs">
-          <button className={!isMesh ? "active" : ""} onClick={() => void runBuild(query)}>
-            产品发散网
-          </button>
-          <button className={isMesh ? "active" : ""} onClick={() => void loadMesh()}>
-            供应链全域网
-          </button>
-          <Link href="/search">寻源搜索</Link>
-          <Link href="/srm">供应商管理</Link>
-          <Link href="/bom">产品 BOM</Link>
-        </nav>
+        <SiteNav active="/" />
         <div className="topMeta">
           <span className={`liveDot ${dataset && !dataset.is_real ? "warn" : ""}`} />
           {graph ? `${graph.stats.suppliers} 家供应商在网 · ${graph.stats.cities} 座城市` : "连接中…"}
@@ -237,6 +228,15 @@ export default function Home() {
               {isMesh && <p>产品入口挂在工艺能力之上，点击任一产品即可展开它的上下游链路。</p>}
             </div>
             <div className="canvasFilters">
+              {/* 页内视图切换:发散网/全域网(全站页面导航在顶部,这里只切本页视图) */}
+              <div className="modeSwitch">
+                <button className={!isMesh ? "on" : ""} onClick={() => void runBuild(query)}>
+                  产品发散网
+                </button>
+                <button className={isMesh ? "on" : ""} onClick={() => void loadMesh()}>
+                  供应链全域网
+                </button>
+              </div>
               <label>
                 每家工序展示
                 <select

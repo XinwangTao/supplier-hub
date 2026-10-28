@@ -119,7 +119,7 @@ export type Supplier = {
   source_url?: string;
 };
 
-export type ScoredSupplier = Supplier & { match_score: number; reasons: string[] };
+export type ScoredSupplier = Supplier & { match_score: number; reasons: string[]; overall?: OverallScore };
 export type SearchResult = {
   items: ScoredSupplier[];
   total: number;
@@ -769,4 +769,141 @@ export type DataPolicy = {
 
 export function fetchDataPolicy(signal?: AbortSignal) {
   return get<DataPolicy>("/api/v1/meta/policy", signal);
+}
+
+// ---- 供应商五维档案(人·机·料·法·环):巡厂人工录入的事实,不是评分 ----
+
+export type DeptHeadcount = { name: string; count: number };
+export type MachineItem = { name: string; model: string; qty: number; age_year: number };
+
+export type FourM1E = {
+  supplier_id: string;
+  // 人
+  employee_total: number;
+  rnd_count: number;
+  departments: DeptHeadcount[];
+  key_personnel: string;
+  // 机
+  factory_area: number;
+  production_lines: number;
+  machines: MachineItem[];
+  automation_rate: number;
+  capacity_utilization: number;
+  // 料
+  main_materials: string;
+  dual_sourcing: string;
+  iqc_method: string;
+  material_compliance: string;
+  // 法
+  certifications: string[];
+  design_capability: string;
+  inspection_capability: string;
+  process_docs: string;
+  change_management: string;
+  // 环
+  env_certification: string;
+  env_penalty: string;
+  waste_treatment: string;
+  location: string;
+  // 留痕
+  recorded_by: string;
+  recorded_at: string;
+};
+
+export const EMPTY_FOUR_M1E = (supplierId: string): FourM1E => ({
+  supplier_id: supplierId,
+  employee_total: 0, rnd_count: 0, departments: [], key_personnel: "",
+  factory_area: 0, production_lines: 0, machines: [], automation_rate: 0, capacity_utilization: 0,
+  main_materials: "", dual_sourcing: "", iqc_method: "", material_compliance: "",
+  certifications: [], design_capability: "", inspection_capability: "", process_docs: "", change_management: "",
+  env_certification: "", env_penalty: "", waste_treatment: "", location: "",
+  recorded_by: "", recorded_at: "",
+});
+
+export type FourM1EEnvelope = {
+  data: FourM1E | null;
+  history_count: number;
+  last_recorded_by: string;
+  last_recorded_at: string;
+};
+
+// 4m1e 的响应信封是 { data, history_count, ... },与 get() 默认剥一层的约定不同,
+// 这里直接取完整 body,调用方才能同时拿到档案与留痕计数。
+export async function fetchFourM1E(supplierId: string, signal?: AbortSignal): Promise<FourM1EEnvelope> {
+  const response = await fetch(`${API}/api/v1/srm/4m1e/${encodeURIComponent(supplierId)}`, { signal });
+  if (!response.ok) throw new Error(`请求失败（${response.status}）`);
+  return (await response.json()) as FourM1EEnvelope;
+}
+
+export function fetchFourM1EHistory(supplierId: string, signal?: AbortSignal) {
+  return get<FourM1E[]>(`/api/v1/srm/4m1e/${encodeURIComponent(supplierId)}/history`, signal);
+}
+
+// 保存走原始 fetch:错误信息在后端 body 的 error 字段里(校验失败原因),要原样带给录入人。
+export async function saveFourM1E(rec: FourM1E): Promise<FourM1E> {
+  const response = await fetch(`${API}/api/v1/srm/4m1e/${encodeURIComponent(rec.supplier_id)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(rec),
+  });
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || `保存失败（${response.status}）`);
+  return payload.data as FourM1E;
+}
+
+// ---- 美团式四维综合评分:QCDST 40% + 匹配 30% + 工商 15% + 4M1E 15% ----
+
+export type OverallDimension = {
+  key: "qcdst" | "match" | "registry" | "field" | string;
+  label: string;
+  score: number; // 0–100,无数据为 0
+  weight: number;
+  flag: "" | "insufficient_evidence" | "no_data" | string;
+  note: string; // 一句话口径
+};
+
+export type OverallScore = {
+  supplier_id?: string;
+  supplier_name?: string;
+  short_name?: string;
+  credit_code?: string;
+  city?: string;
+  capabilities?: string[];
+  total: number;
+  dimensions: OverallDimension[];
+  flags: string[];
+  confidence: "high" | "medium" | "low" | string;
+};
+
+// 榜单条目:身份字段后端必返(附着在条目上),与搜索场景的可选 Overall 不同。
+export type ScoringRankingItem = Omit<
+  OverallScore,
+  "supplier_id" | "supplier_name" | "short_name" | "credit_code" | "city" | "capabilities"
+> & {
+  supplier_id: string;
+  supplier_name: string;
+  short_name?: string;
+  credit_code?: string;
+  city?: string;
+  capabilities?: string[];
+};
+
+export function fetchScoringRanking(capability?: string, signal?: AbortSignal) {
+  const qs = capability ? `?capability=${encodeURIComponent(capability)}` : "";
+  return get<{ items: ScoringRankingItem[]; total: number; page: number; page_size: number; capability: string; weights: Record<string, number> }>(
+    `/api/v1/scoring/ranking${qs}`, signal,
+  );
+}
+
+// 维度标记的展示文案:徽章 tooltip 与榜单标记共用。
+export function flagLabel(flag: string): string {
+  if (flag === "insufficient_evidence") return "证据不足";
+  if (flag === "no_data") return "无数据";
+  return "";
+}
+
+export type CapabilityMeta = { code: string; name: string; category: string; description: string };
+
+export function fetchCapabilities(signal?: AbortSignal) {
+  return get<CapabilityMeta[]>("/api/v1/catalog/capabilities", signal);
 }
