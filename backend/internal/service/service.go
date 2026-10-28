@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/example/supplier-hub/backend/internal/domain"
+	"github.com/example/supplier-hub/backend/internal/policy"
 	"github.com/example/supplier-hub/backend/internal/repository"
 )
 
@@ -27,7 +28,9 @@ func (s *SupplierService) Search(ctx context.Context, req domain.SearchRequest) 
 	if req.Page < 1 {
 		req.Page = 1
 	}
-	if req.PageSize < 1 || req.PageSize > 100 {
+	// 单页条数由服务端强制：前端传多大都不作数。
+	// 否则"批量导出"只需要把 page_size 调成 10000，一个请求就拖走全库。
+	if req.PageSize < 1 || req.PageSize > policy.MaxPageSize {
 		req.PageSize = 20
 	}
 	items, err := s.repo.Search(ctx, filters)
@@ -35,7 +38,15 @@ func (s *SupplierService) Search(ctx context.Context, req domain.SearchRequest) 
 		return domain.SearchResult{}, err
 	}
 	scored := scoreSuppliers(items, filters)
+	interpretation := explainFilters(filters)
 	start := (req.Page - 1) * req.PageSize
+	// 深翻页限制：未认证调用最多触及前 N 条，防止用 offset 遍历全库。
+	// 这里不退化成空结果——返回可访问范围内的最后一页并说明原因，
+	// 让用户知道"不是没有更多，是需要认证"，而不是以为数据就这么多。
+	if start > policy.DeepPageFreeMax {
+		start = policy.DeepPageFreeMax
+		interpretation += " 已限制在公开层可访问的最后一页；继续翻页需完成企业认证。"
+	}
 	if start > len(scored) {
 		start = len(scored)
 	}
@@ -43,7 +54,7 @@ func (s *SupplierService) Search(ctx context.Context, req domain.SearchRequest) 
 	if end > len(scored) {
 		end = len(scored)
 	}
-	return domain.SearchResult{Items: scored[start:end], Total: len(scored), Page: req.Page, PageSize: req.PageSize, Applied: filters, Interpretation: explainFilters(filters)}, nil
+	return domain.SearchResult{Items: scored[start:end], Total: len(scored), Page: req.Page, PageSize: req.PageSize, Applied: filters, Interpretation: interpretation}, nil
 }
 
 func (s *SupplierService) Get(ctx context.Context, id string) (domain.Supplier, error) {

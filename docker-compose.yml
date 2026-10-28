@@ -14,6 +14,13 @@ services:
     environment:
       HTTP_ADDR: ":8080"
       CORS_ORIGINS: "http://localhost:3000"
+      # 真实数据源：把导出的工商信息表挂到 ./backend/data 下，或填入企查查密钥
+      SUPPLIER_SOURCE: "${SUPPLIER_SOURCE:-auto}"
+      SUPPLIER_CSV: "${SUPPLIER_CSV:-data/suppliers.csv}"
+      QCC_KEY: "${QCC_KEY:-}"
+      QCC_SECRET_KEY: "${QCC_SECRET_KEY:-}"
+    volumes:
+      - ./backend/data:/app/data
     ports:
       - "8080:8080"
     depends_on:
