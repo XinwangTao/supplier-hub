@@ -1,6 +1,41 @@
-backend/bin/
+# ---- 构建产物（前端） ----
 frontend/node_modules/
 frontend/.next/
-.env
-*.log
+frontend/.next-*/
+frontend/out/
+*.tsbuildinfo
+
+# ---- 构建产物（后端） ----
+backend/bin/
 backend/server
+*.exe
+
+# ---- 环境与密钥 ----
+.env
+.env.local
+*.pem
+*.key
+
+# ---- 运行时与日志 ----
+*.log
+logs/
+tmp/
+
+# ---- 编辑器 / 系统 ----
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# ---- 误入的临时产物 ----
+# Go 编辑器保存时可能落 .<数字> 备份，不要进版本库
+backend/**/*.go.*
+backend/package-lock.json
+
+# ---- 真实数据集不随代码分发 ----
+# backend/data/ 只提交 *.template.csv 与 *.example.txt 模板；
+# 真实供应商数据属于接入方资产，由部署方自行放入并受数据授权约束。
+backend/data/*.csv
+backend/data/*.txt
+!backend/data/*.template.csv
+!backend/data/*.example.txt
