@@ -1,0 +1,32 @@
+{
+  "name": "matching_scoring_workflow",
+  "title": "美团式匹配评分排行(一期:匹配+综合分+榜单)",
+  "type": "workflow",
+  "version": "1.0",
+  "date": "2026-10-28",
+  "brief": "docs/product/matching_scoring_brief.md",
+  "nodes": [
+    { "id": "n1", "label": "采购方输入需求", "kind": "manual", "detail": "自然语言+筛选(区域/资本/认证),沿用寻源搜索框" },
+    { "id": "n2", "label": "需求解析", "kind": "process", "detail": "能力/城市/注册资本/关键词;解析失败走兜底 n8" },
+    { "id": "n3", "label": "候选召回", "kind": "process", "detail": "能力匹配+筛选过滤,复用 supply_match 召回" },
+    { "id": "n4", "label": "四维综合评分", "kind": "process", "detail": "QCDST 40% + 匹配度 30% + 工商实力 15% + 4M1E 档案 15%;权重可配;缺失维度置 0" },
+    { "id": "n5", "label": "置信标记", "kind": "process", "detail": "证据不足(QCDST<15批)/无数据(4M1E 未录)/工商缺失,显式标注不隐藏" },
+    { "id": "n6", "label": "排序展示", "kind": "display", "detail": "综合分+四分项+可解释理由;搜索结果带综合分徽章" },
+    { "id": "n7", "label": "点开档案", "kind": "manual", "detail": "联动供应商档案页(工商+4M1E+QCDST)" },
+    { "id": "n8", "label": "榜单浏览(无需求)/解析兜底", "kind": "manual_fallback", "detail": "综合总榜+32 类品类榜;匹配度维度替换为能力覆盖度;解析失败全库按综合分" }
+  ],
+  "edges": [
+    { "from": "n1", "to": "n2", "label": "提交需求" },
+    { "from": "n2", "to": "n3", "label": "解析成功" },
+    { "from": "n2", "to": "n8", "label": "解析失败(兜底)", "kind": "fail" },
+    { "from": "n3", "to": "n4", "label": "候选集" },
+    { "from": "n4", "to": "n5", "label": "" },
+    { "from": "n5", "to": "n6", "label": "" },
+    { "from": "n6", "to": "n7", "label": "点击供应商" },
+    { "from": "n8", "to": "n4", "label": "榜单走同一评分管线" }
+  ],
+  "subgraphs": [
+    { "name": "demand_response_subgraph", "file": "demand_response_subgraph.html", "phase": "二期:需求发布与应答" }
+  ],
+  "out_of_scope": ["评分人工干预入口", "供应商付费排名", "自动外采数据", "QCDST 口径变更"]
+}

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Archify 图 · 供应商五维档案(人机料法环)录入与展示</title>
+<style>
+  body { font-family: "Microsoft YaHei", sans-serif; background: #f4f6f4; margin: 0; padding: 24px; color: #1b3b32; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .meta { color: #5a7268; font-size: 13px; margin-bottom: 20px; }
+  .meta a { color: #0e6253; }
+  svg { background: #ffffff; border: 1px solid #d7e2dc; border-radius: 10px; display: block; }
+  .node rect { rx: 10; fill: #ffffff; stroke: #0e6253; stroke-width: 1.4; }
+  .node.manual rect { fill: #eef6f2; }
+  .node.fail rect { stroke: #b03a2e; }
+  .node text.name { font-size: 14px; font-weight: bold; fill: #12332b; }
+  .node text.detail { font-size: 11px; fill: #5a7268; }
+  .edge { fill: none; stroke: #7fa79a; stroke-width: 1.4; marker-end: url(#arrow); }
+  .edge.fail { stroke: #c9603c; stroke-dasharray: 5 4; }
+  .edge.manual { stroke: #7f9ec7; stroke-dasharray: 2 4; }
+  .edgeLabel { font-size: 11px; fill: #47655c; }
+  .legend { margin-top: 14px; font-size: 12px; color: #5a7268; }
+</style>
+</head>
+<body>
+<h1>供应商五维档案(人·机·料·法·环)——录入与展示工作流</h1>
+<div class="meta">
+  类型:workflow · 版本 1.0 · 2026-10-28 · Brief:<a href="../product/supplier_4m1e_brief.md">docs/product/supplier_4m1e_brief.md</a>
+  · 旁路:<a href="supplier_4m1e_workflow.json">supplier_4m1e_workflow.json</a>(与本图一致)
+</div>
+<svg width="1180" height="560" viewBox="0 0 1180 560">
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#7fa79a"/>
+    </marker>
+  </defs>
+
+  <!-- n1 -->
+  <g class="node manual">
+    <rect x="30" y="60" width="200" height="70" rx="10"/>
+    <text class="name" x="130" y="88" text-anchor="middle">① SRM 工作台选择供应商</text>
+    <text class="detail" x="130" y="110" text-anchor="middle">入口:档案页「录入五维信息」</text>
+  </g>
+
+  <!-- n2 -->
+  <g class="node">
+    <rect x="300" y="60" width="210" height="70" rx="10"/>
+    <text class="name" x="405" y="88" text-anchor="middle">② 五维录入表单</text>
+    <text class="detail" x="405" y="110" text-anchor="middle">人/机/料/法/环 分区 · 部门分布结构</text>
+  </g>
+
+  <!-- n3 -->
+  <g class="node manual">
+    <rect x="580" y="60" width="190" height="70" rx="10"/>
+    <text class="name" x="675" y="88" text-anchor="middle">③ 填写巡厂现场数据</text>
+    <text class="detail" x="675" y="110" text-anchor="middle">全部人工 · 无自动抓取</text>
+  </g>
+
+  <!-- n4 -->
+  <g class="node">
+    <rect x="840" y="60" width="200" height="70" rx="10"/>
+    <text class="name" x="940" y="88" text-anchor="middle">④ 提交校验</text>
+    <text class="detail" x="940" y="110" text-anchor="middle">人数/设备非负 · 比例 0–100%</text>
+  </g>
+
+  <!-- n5 -->
+  <g class="node">
+    <rect x="840" y="250" width="200" height="70" rx="10"/>
+    <text class="name" x="940" y="278" text-anchor="middle">⑤ 全量快照留痕保存</text>
+    <text class="detail" x="940" y="300" text-anchor="middle">追加式 · 录入人+时间 · 可回查</text>
+  </g>
+
+  <!-- n6 -->
+  <g class="node">
+    <rect x="440" y="250" width="230" height="70" rx="10"/>
+    <text class="name" x="555" y="278" text-anchor="middle">⑥ 档案页五维分区展示</text>
+    <text class="detail" x="555" y="300" text-anchor="middle">缺失显示「—」· 不推断不填充</text>
+  </g>
+
+  <!-- n7 -->
+  <g class="node manual">
+    <rect x="120" y="250" width="210" height="70" rx="10"/>
+    <text class="name" x="225" y="278" text-anchor="middle">⑦ 数据修正(重录)</text>
+    <text class="detail" x="225" y="300" text-anchor="middle">旧快照保留 · 历史不覆盖</text>
+  </g>
+
+  <!-- edges -->
+  <path class="edge" d="M230,95 L300,95"/>
+  <path class="edge" d="M510,95 L580,95"/>
+  <path class="edge" d="M770,95 L840,95"/>
+  <path class="edge fail" d="M940,130 L940,180 L405,180 L405,130"/>
+  <text class="edgeLabel" x="660" y="174">校验失败(标错,回表单)</text>
+  <path class="edge" d="M940,130 L940,250"/>
+  <text class="edgeLabel" x="948" y="200">通过</text>
+  <path class="edge" d="M840,285 L670,285"/>
+  <path class="edge manual" d="M440,285 L330,285"/>
+  <text class="edgeLabel" x="385" y="278">发现需修正</text>
+  <path class="edge manual" d="M225,250 L225,150 L300,110"/>
+  <text class="edgeLabel" x="235" y="200">重开表单</text>
+</svg>
+<div class="legend">
+  实线绿=主路径 · 虚线红=校验失败回路 · 虚线蓝=人工修正路径 ·
+  范围外:自动评分(QCDST 不动)/企查查自动抓取/权限体系/多租户隔离/CSV 批量导入
+</div>
+</body>
+</html>

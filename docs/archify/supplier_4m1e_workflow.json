@@ -1,0 +1,28 @@
+{
+  "name": "supplier_4m1e_workflow",
+  "title": "供应商五维档案(人机料法环)录入与展示",
+  "type": "workflow",
+  "version": "1.0",
+  "date": "2026-10-28",
+  "brief": "docs/product/supplier_4m1e_brief.md",
+  "nodes": [
+    { "id": "n1", "label": "SRM 工作台选择供应商", "kind": "manual", "detail": "入口:SRM 工作台 / 供应商档案页「录入五维信息」按钮" },
+    { "id": "n2", "label": "打开五维录入表单", "kind": "form", "detail": "人/机/料/法/环五个分区;人为部门分布结构(品质/开发/业务/生产/高层管理,可自定义)" },
+    { "id": "n3", "label": "填写巡厂现场数据", "kind": "manual", "detail": "审核员按实测填写;全部人工,无自动抓取" },
+    { "id": "n4", "label": "提交校验", "kind": "validation", "detail": "人数/设备数非负、比例 0-100%、日期格式;失败标错回表单" },
+    { "id": "n5", "label": "全量快照留痕保存", "kind": "storage", "detail": "Postgres JSON 列;追加式,记录录入人+时间,历史可回查" },
+    { "id": "n6", "label": "档案页五维分区展示", "kind": "display", "detail": "DetailPanel 按 4M1E 分区;缺失字段显示 —,不推断不填充" },
+    { "id": "n7", "label": "数据修正(重录)", "kind": "manual_fallback", "detail": "重新进入表单;旧快照保留可回查,不覆盖历史" }
+  ],
+  "edges": [
+    { "from": "n1", "to": "n2", "label": "选中供应商" },
+    { "from": "n2", "to": "n3", "label": "" },
+    { "from": "n3", "to": "n4", "label": "提交" },
+    { "from": "n4", "to": "n2", "label": "校验失败(标错)", "kind": "fail" },
+    { "from": "n4", "to": "n5", "label": "通过" },
+    { "from": "n5", "to": "n6", "label": "读取" },
+    { "from": "n6", "to": "n7", "label": "发现需修正", "kind": "manual" },
+    { "from": "n7", "to": "n2", "label": "重开表单", "kind": "manual" }
+  ],
+  "out_of_scope": ["自动评分(QCDST 不动)", "企查查自动抓取", "权限体系", "多租户隔离", "CSV 批量导入"]
+}

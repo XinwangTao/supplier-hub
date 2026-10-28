@@ -1,0 +1,20 @@
+{
+  "name": "demand_response_subgraph",
+  "title": "需求发布与应答(二期子图)",
+  "type": "workflow",
+  "version": "1.0",
+  "date": "2026-10-28",
+  "parent": "matching_scoring_workflow.html",
+  "brief": "docs/product/matching_scoring_brief.md",
+  "nodes": [
+    { "id": "d1", "label": "采购方发布需求", "kind": "manual", "detail": "品类/规格/量/交期/区域" },
+    { "id": "d2", "label": "需求入库+匹配推送", "kind": "process", "detail": "挂 srm store 扩展;按主图④评分管线推候选" },
+    { "id": "d3", "label": "供应商查看并应答", "kind": "manual", "detail": "报价/产能/交期承诺(人工填报)" },
+    { "id": "d4", "label": "应答列表按综合分排序", "kind": "display", "detail": "采购方比对 → 转入 SRM 引入闭环" }
+  ],
+  "edges": [
+    { "from": "d1", "to": "d2", "label": "发布" },
+    { "from": "d2", "to": "d3", "label": "推送候选" },
+    { "from": "d3", "to": "d4", "label": "应答" }
+  ]
+}
