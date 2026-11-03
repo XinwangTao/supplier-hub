@@ -1,0 +1,49 @@
+{
+  "name": "长尾优质供应商发现",
+  "version": "1.0",
+  "date": "2026-10-29",
+  "status": "待确认",
+  "goal": "发现参保 100–500 人、有资质、无风险的中型供应商，而不是再扩大厂名单",
+  "nodes": [
+    {"id": "N1", "type": "input", "label": "品类/工艺关键词", "detail": "如注塑件、连接器、SMT 代工；跨行业时按品类分批"},
+    {"id": "N2", "type": "process", "label": "多源发现", "detail": "已验证：中国政府采购网（Playwright 抓中标公告，含供应商名与金额）；受限：1688 强制登录；兜底：人工名录"},
+    {"id": "N3", "type": "process", "label": "标准化去重·排除大厂", "detail": "企业名归并、信用代码对齐，剔除已入库 101 家与上市公司主体"},
+    {"id": "N4", "type": "process", "label": "企查查体检", "detail": "参保 100–500 筛规模；抓资质、行政处罚、经营异常、专利、中标记录；队列+断点续跑"},
+    {"id": "N5", "type": "process", "label": "质量评分", "detail": "资质权重 + 风险扣分 + 规模贴合度 + 中标活跃度"},
+    {"id": "N6", "type": "output", "label": "候选池", "detail": "按分排序，附信用代码、关键指标、源链接，写入 supplier_candidates.json"},
+    {"id": "N7", "type": "human", "label": "人工复核", "detail": "看产线、看案例、打电话，标注值得跟进"},
+    {"id": "N8", "type": "human", "label": "询价/打样/验厂", "detail": "价格只在此环节产生；通过后进入正式供应商库"},
+    {"id": "X1", "type": "exception", "label": "源反爬或无结果", "detail": "政府采购网频繁访问、1688 验证码 → 降速重试，仍失败转人工名录"},
+    {"id": "X2", "type": "exception", "label": "企查查配额不足", "detail": "402 credit_balance_insufficient → 候选挂起，换 Key 或充值后续跑"},
+    {"id": "X3", "type": "exception", "label": "名称多候选/查不到", "detail": "多候选不自动选择，人工确认主体或用信用代码直查"},
+    {"id": "X4", "type": "exception", "label": "评分不合格", "detail": "有处罚/经营异常/规模偏离 → 淘汰池，保留记录避免重复查询"}
+  ],
+  "edges": [
+    {"from": "N1", "to": "N2", "label": "关键词"},
+    {"from": "N2", "to": "N3", "label": "原始候选"},
+    {"from": "N3", "to": "N4", "label": "净候选名单"},
+    {"from": "N4", "to": "N5", "label": "体检结果"},
+    {"from": "N5", "to": "N6", "label": "排序候选"},
+    {"from": "N6", "to": "N7", "label": "人工复核"},
+    {"from": "N7", "to": "N8", "label": "跟进名单"},
+    {"from": "N2", "to": "X1", "label": "抓取失败", "condition": "反爬/无结果"},
+    {"from": "X1", "to": "N2", "label": "人工补名录", "condition": "降速重试仍失败"},
+    {"from": "N4", "to": "X2", "label": "配额耗尽", "condition": "402"},
+    {"from": "X2", "to": "N4", "label": "换 Key/充值后续跑", "condition": "恢复"},
+    {"from": "N3", "to": "X3", "label": "主体不明", "condition": "多候选"},
+    {"from": "N5", "to": "X4", "label": "不达标", "condition": "风险/规模偏离"}
+  ],
+  "assumptions": [
+    "企查查只能查证不能发现：无行业/规模检索接口",
+    "A 股年报通常只披露前五大供应商合计金额与占比，不披露名称",
+    "政府采购网搜索页存在反爬，需限速",
+    "价格无法从公开源获得，只能在 N8 人工询价"
+  ],
+  "out_of_scope": ["价格预测", "自动验厂", "大供应商扩容管理"],
+  "success_criteria": [
+    "单批次从公开源产出 ≥50 个非上市公司候选主体",
+    "≥30% 候选参保人数落在 100–500 区间",
+    "每个候选都有可用信用代码与源链接",
+    "人工复核时至少一半候选值得打一个电话"
+  ]
+}

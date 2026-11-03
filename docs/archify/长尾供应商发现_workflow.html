@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>长尾优质供应商发现 — 工作流 v1.0</title>
+<style>
+  :root{
+    --bg:#0f1420; --card:#1a2233; --line:#2c3a52; --text:#e8edf7; --muted:#8fa0bd;
+    --accent:#4fa3ff; --ok:#3ecf8e; --warn:#f5b942; --danger:#f2637b; --human:#b48cf2;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:32px 24px 56px;background:var(--bg);color:var(--text);
+       font:14px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:28px}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:26px;font-size:12px;color:var(--muted)}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
+  .flow{display:grid;grid-template-columns:1fr 300px;gap:24px;max-width:1180px}
+  .main{display:flex;flex-direction:column;align-items:stretch;gap:0}
+  .node{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;
+        position:relative;border-left:3px solid var(--accent)}
+  .node h3{margin:0 0 4px;font-size:14px;font-weight:600}
+  .node p{margin:0;color:var(--muted);font-size:12.5px}
+  .node .id{position:absolute;top:12px;right:14px;font-size:11px;color:var(--muted);letter-spacing:.5px}
+  .node[data-type="input"]{border-left-color:var(--ok)}
+  .node[data-type="human"]{border-left-color:var(--human)}
+  .node[data-type="output"]{border-left-color:var(--warn)}
+  .node[data-type="decision"]{border-left-color:var(--danger)}
+  .arrow{height:26px;position:relative}
+  .arrow::before{content:"";position:absolute;left:34px;top:0;bottom:6px;width:1px;background:var(--line)}
+  .arrow::after{content:"";position:absolute;left:30px;bottom:0;border:5px solid transparent;border-top-color:var(--line)}
+  .arrow span{position:absolute;left:46px;top:2px;font-size:11.5px;color:var(--muted)}
+  .side{display:flex;flex-direction:column;gap:14px}
+  .side .node{border-left-color:var(--danger);background:#1c1a26}
+  .side h2{font-size:12px;color:var(--muted);margin:0 0 2px;font-weight:500;letter-spacing:.6px}
+  .note{max-width:1180px;margin-top:30px;padding:14px 16px;background:#161d2b;border:1px solid var(--line);
+        border-radius:10px;font-size:12.5px;color:var(--muted)}
+  .note b{color:var(--text)}
+  code{background:#0c111b;padding:1px 5px;border-radius:4px;font-size:12px}
+</style>
+</head>
+<body>
+  <h1>长尾优质供应商发现 — 工作流</h1>
+  <div class="sub">目标：发现参保 100–500 人、有资质、无风险的中型供应商，而不是再扩大厂名单。v1.0 / 2026-10-29 / 待确认</div>
+
+  <div class="legend">
+    <span><i style="background:#3ecf8e"></i>输入</span>
+    <span><i style="background:#4fa3ff"></i>处理</span>
+    <span><i style="background:#b48cf2"></i>人工节点</span>
+    <span><i style="background:#f5b942"></i>产出</span>
+    <span><i style="background:#f2637b"></i>失败/人工出口</span>
+  </div>
+
+  <div class="flow">
+    <div class="main">
+      <div class="node" data-type="input">
+        <span class="id">N1</span>
+        <h3>品类 / 工艺关键词</h3>
+        <p>例如「注塑件」「连接器」「SMT 代工」；跨行业时按品类分批，每批一个关键词。</p>
+      </div>
+      <div class="arrow"><span>E1 关键词</span></div>
+
+      <div class="node">
+        <span class="id">N2</span>
+        <h3>多源发现</h3>
+        <p><b>已验证：</b>中国政府采购网（Playwright 抓中标公告，可拿到供应商名+金额）。<b>受限：</b>1688 强制登录，无 cookie 不可自动抓。<b>兜底：</b>人工名录（展会、协会、同行推荐）。</p>
+      </div>
+      <div class="arrow"><span>E2 原始候选</span></div>
+
+      <div class="node">
+        <span class="id">N3</span>
+        <h3>标准化去重 · 排除大厂</h3>
+        <p>企业名归并、统一社会信用代码对齐；剔除已入库 101 家与上市公司主体。</p>
+      </div>
+      <div class="arrow"><span>E3 净候选名单</span></div>
+
+      <div class="node">
+        <span class="id">N4</span>
+        <h3>企查查体检</h3>
+        <p>参保人数 100–500 筛规模；抓资质证书、行政处罚、经营异常、专利、中标记录。走队列，断点续跑。</p>
+      </div>
+      <div class="arrow"><span>E4 体检结果</span></div>
+
+      <div class="node">
+        <span class="id">N5</span>
+        <h3>质量评分</h3>
+        <p>资质权重 + 风险扣分 + 规模贴合度 + 中标活跃度；输出分值与证据链接。</p>
+      </div>
+      <div class="arrow"><span>E5 排序候选</span></div>
+
+      <div class="node" data-type="output">
+        <span class="id">N6</span>
+        <h3>候选池</h3>
+        <p>按分排序，每个候选附信用代码、关键指标、源链接；写入 <code>supplier_candidates.json</code>。</p>
+      </div>
+      <div class="arrow"><span>E6 人工复核</span></div>
+
+      <div class="node" data-type="human">
+        <span class="id">N7</span>
+        <h3>人工复核</h3>
+        <p>看产线、看案例、打电话。淘汰明显不合适的，标注「值得跟进」。</p>
+      </div>
+      <div class="arrow"><span>E7 跟进名单</span></div>
+
+      <div class="node" data-type="human">
+        <span class="id">N8</span>
+        <h3>询价 / 打样 / 验厂</h3>
+        <p><b>价格只在这里产生</b>——公开数据拿不到真实报价，必须人工询价。验证通过后进入正式供应商库。</p>
+      </div>
+    </div>
+
+    <div class="side">
+      <h2>失败 / 人工出口</h2>
+      <div class="node">
+        <span class="id">X1</span>
+        <h3>源反爬或无结果</h3>
+        <p>政府采购网返回「频繁访问」、1688 触发验证 → 降速重试，仍失败则转人工名录（退回 N2）。</p>
+      </div>
+      <div class="node">
+        <span class="id">X2</span>
+        <h3>企查查配额不足</h3>
+        <p>返回 402 / <code>credit_balance_insufficient</code> → 候选进队列挂起，换 Key 或充值后续跑（N4 断点）。</p>
+      </div>
+      <div class="node">
+        <span class="id">X3</span>
+        <h3>名称多候选 / 查不到</h3>
+        <p>返回「多候选」不自动选择 → 人工确认主体，或用信用代码直查。</p>
+      </div>
+      <div class="node">
+        <span class="id">X4</span>
+        <h3>评分不合格</h3>
+        <p>有行政处罚 / 经营异常 / 规模偏离 → 进淘汰池，保留记录避免重复查询。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>本图的前提判断：</b>企查查只能"查证"不能"发现"——它没有行业/规模检索接口。发现必须靠外部源，且没有单一源能自动产出可靠名单，
+    因此流程设计为「多源半自动发现 + 企查查可控体检」。<br>
+    <b>已验证的不利事实：</b>A 股年报通常只披露前五大供应商合计金额与占比、不披露名称；政府采购网搜索页有反爬。这两点决定了 N2 必须保留人工名录入口。<br>
+    <b>刻意不做的：</b>价格预测、自动验厂、大供应商扩容管理。
+  </div>
+</body>
+</html>
